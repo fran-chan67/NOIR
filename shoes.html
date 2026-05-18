@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calçado | NOIR</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        /* Imagens de sapatos: contain para não cortar os lados */
+        .catalog-grid .product-image {
+            background-color: var(--color-gray-100);
+        }
+        .catalog-grid .product-image img {
+            object-fit: contain;
+            padding: 12px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Custom Cursor -->
+    <div class="cursor"></div>
+    <div class="cursor-follower"></div>
+
+    <!-- Search Overlay -->
+    <div class="search-overlay" id="searchOverlay">
+        <div class="search-overlay-header">
+            <div class="search-input-wrap">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <path d="m21 21-4.35-4.35"></path>
+                </svg>
+                <input type="text" id="searchOverlayInput" placeholder="Pesquisar produtos..." autocomplete="off">
+            </div>
+            <button class="search-overlay-close" id="searchOverlayClose" aria-label="Fechar pesquisa">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
+        </div>
+        <div class="search-results-container" id="searchResultsContainer">
+            <p class="search-hint" id="searchHint">Escreva para pesquisar produtos...</p>
+            <div class="search-results-grid" id="searchResultsGrid"></div>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <header class="header header-dark" id="header">
+        <nav class="nav">
+            <a href="index.html" class="logo">NOIR</a>
+            <ul class="nav-links">
+                <li><a href="homem.html" class="nav-link">Coleção</a></li>
+                <li><a href="shoes.html" class="nav-link active">Calçado</a></li>
+                <li><a href="index.html#about" class="nav-link">Sobre</a></li>
+                <li><a href="index.html#contact" class="nav-link">Contacto</a></li>
+            </ul>
+            <div class="nav-actions">
+                <button class="search-btn" aria-label="Pesquisar">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <path d="m21 21-4.35-4.35"></path>
+                    </svg>
+                </button>
+                <button class="cart-btn" id="cartBtn" aria-label="Carrinho">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+                        <line x1="3" y1="6" x2="21" y2="6"></line>
+                        <path d="M16 10a4 4 0 0 1-8 0"></path>
+                    </svg>
+                    <span class="cart-count" id="cartCount">0</span>
+                </button>
+                <button class="menu-toggle" id="menuToggle" aria-label="Menu">
+                    <span></span>
+                    <span></span>
+                </button>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Mobile Menu -->
+    <div class="mobile-menu" id="mobileMenu">
+        <ul class="mobile-nav-links">
+            <li><a href="homem.html">Coleção</a></li>
+            <li><a href="shoes.html">Calçado</a></li>
+            <li><a href="index.html#about">Sobre</a></li>
+            <li><a href="index.html#contact">Contacto</a></li>
+        </ul>
+    </div>
+
+    <!-- Cart Sidebar -->
+    <div class="cart-overlay" id="cartOverlay"></div>
+    <aside class="cart-sidebar" id="cartSidebar">
+        <div class="cart-header">
+            <h2>Carrinho</h2>
+            <button class="cart-close" id="cartClose" aria-label="Fechar carrinho">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
+        </div>
+        <div class="cart-items" id="cartItems"></div>
+        <div class="cart-empty" id="cartEmpty">
+            <p>O seu carrinho está vazio</p>
+            <a href="homem.html" class="btn btn-primary">Explorar Coleção</a>
+        </div>
+        <div class="cart-footer" id="cartFooter">
+            <div class="cart-subtotal">
+                <span>Subtotal</span>
+                <span id="cartSubtotal">€0.00</span>
+            </div>
+            <p class="cart-shipping">Portes calculados no checkout</p>
+            <button class="btn btn-primary btn-full" id="checkoutBtn">Finalizar Compra</button>
+        </div>
+    </aside>
+
+    <!-- Page Header -->
+    <section class="page-header">
+        <div class="container">
+            <h1 class="page-title reveal">Calçado</h1>
+            <p class="page-subtitle reveal">Artesanato italiano de excelência</p>
+        </div>
+    </section>
+
+    <!-- Catalog Section -->
+    <section class="catalog-section">
+        <div class="container">
+            <!-- Filters -->
+            <div class="filters reveal">
+                <div class="filter-group">
+                    <button class="filter-btn" id="filterToggle">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <line x1="4" y1="21" x2="4" y2="14"></line>
+                            <line x1="4" y1="10" x2="4" y2="3"></line>
+                            <line x1="12" y1="21" x2="12" y2="12"></line>
+                            <line x1="12" y1="8" x2="12" y2="3"></line>
+                            <line x1="20" y1="21" x2="20" y2="16"></line>
+                            <line x1="20" y1="12" x2="20" y2="3"></line>
+                            <line x1="1" y1="14" x2="7" y2="14"></line>
+                            <line x1="9" y1="8" x2="15" y2="8"></line>
+                            <line x1="17" y1="16" x2="23" y2="16"></line>
+                        </svg>
+                        Filtros
+                    </button>
+                </div>
+                <div class="filter-group">
+                    <!-- CORRIGIDO: Preço menor para maior como opção padrão -->
+                    <select class="filter-select" id="sortSelect">
+                        <option value="price-asc" selected>Preço: Menor para Maior</option>
+                        <option value="featured">Em Destaque</option>
+                        <option value="price-desc">Preço: Maior para Menor</option>
+                        <option value="newest">Mais Recentes</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Filter Panel -->
+            <div class="filter-panel" id="filterPanel">
+                <div class="filter-section">
+                    <h4>Tamanho</h4>
+                    <div class="filter-options size-options">
+                        <label class="filter-checkbox"><input type="checkbox" name="size" value="38"><span>38</span></label>
+                        <label class="filter-checkbox"><input type="checkbox" name="size" value="39"><span>39</span></label>
+                        <label class="filter-checkbox"><input type="checkbox" name="size" value="40"><span>40</span></label>
+                        <label class="filter-checkbox"><input type="checkbox" name="size" value="41"><span>41</span></label>
+                        <label class="filter-checkbox"><input type="checkbox" name="size" value="42"><span>42</span></label>
+                        <label class="filter-checkbox"><input type="checkbox" name="size" value="43"><span>43</span></label>
+                        <label class="filter-checkbox"><input type="checkbox" name="size" value="44"><span>44</span></label>
+                    </div>
+                </div>
+                <div class="filter-section">
+                    <h4>Preço</h4>
+                    <!-- CORRIGIDO: Ranges ajustados aos preços reais (120€ - 140€) -->
+                    <div class="filter-options">
+                        <label class="filter-checkbox"><input type="checkbox" name="price" value="0-120"><span>Até €120</span></label>
+                        <label class="filter-checkbox"><input type="checkbox" name="price" value="121-130"><span>€121 - €130</span></label>
+                        <label class="filter-checkbox"><input type="checkbox" name="price" value="131+"><span>€131+</span></label>
+                    </div>
+                </div>
+                <div class="filter-actions">
+                    <button class="btn btn-text" id="clearFilters">Limpar Filtros</button>
+                    <button class="btn btn-primary" id="applyFilters">Aplicar</button>
+                </div>
+            </div>
+
+            <!-- Products Grid -->
+            <div class="products-grid catalog-grid" id="productsGrid">
+
+                <!-- Sapato 101 - data-price corrigido para preço real -->
+                <article class="product-card reveal" data-product-id="101" data-price="130" data-size="38,39,40,41,42,43,44" data-color="black">
+                    <a href="produto.html?id=101" class="product-image-link">
+                        <div class="product-image">
+                            <img src="shoes/air_jordan_4_1.png" alt="Air Jordan 4 Fear">
+                            <div class="product-overlay"><span>Ver Detalhes</span></div>
+                        </div>
+                    </a>
+                    <div class="product-info">
+                        <h3 class="product-name">Air Jordan 4 Fear</h3>
+                        <p class="product-price">130.00€</p>
+                    </div>
+                </article>
+
+                <!-- Sapato 102 -->
+                <article class="product-card reveal" data-product-id="102" data-price="120" data-size="38,39,40,41,42,43,44" data-color="brown">
+                    <a href="produto.html?id=102" class="product-image-link">
+                        <div class="product-image">
+                            <img src="shoes/air_jordan_11_1.png" alt="Air Jordan 11 retro Cool Grey">
+                            <div class="product-overlay"><span>Ver Detalhes</span></div>
+                        </div>
+                    </a>
+                    <div class="product-info">
+                        <h3 class="product-name">Air Jordan 11 retro Cool Grey</h3>
+                        <p class="product-price">120.00€</p>
+                    </div>
+                </article>
+
+                <!-- Sapato 103 -->
+                <article class="product-card reveal" data-product-id="103" data-price="130" data-size="38,39,40,41,42,43,44" data-color="gray">
+                    <a href="produto.html?id=103" class="product-image-link">
+                        <div class="product-image">
+                            <img src="shoes/jordan_travis_scott_1.png" alt="Jordan x Travis Scott Air Jordan 1 Low">
+                            <div class="product-overlay"><span>Ver Detalhes</span></div>
+                        </div>
+                    </a>
+                    <div class="product-info">
+                        <h3 class="product-name">Jordan x Travis Scott Air Jordan 1 Low</h3>
+                        <p class="product-price">130.00€</p>
+                    </div>
+                </article>
+
+                <!-- Sapato 104 -->
+                <article class="product-card reveal" data-product-id="104" data-price="140" data-size="38,39,40,41,42,43,44" data-color="white">
+                    <a href="produto.html?id=104" class="product-image-link">
+                        <div class="product-image">
+                            <img src="shoes/lv_footprint_1.png" alt="LV Footprint Soccer">
+                            <div class="product-overlay"><span>Ver Detalhes</span></div>
+                        </div>
+                    </a>
+                    <div class="product-info">
+                        <h3 class="product-name">LV Footprint Soccer</h3>
+                        <p class="product-price">140.00€</p>
+                    </div>
+                </article>
+
+                <!-- Sapato 105 -->
+                <article class="product-card reveal" data-product-id="105" data-price="140" data-size="38,39,40,41,42,43,44" data-color="black">
+                    <a href="produto.html?id=105" class="product-image-link">
+                        <div class="product-image">
+                            <img src="shoes/lv_timberland_boot_1.png" alt="LV X Timberland Boot">
+                            <div class="product-overlay"><span>Ver Detalhes</span></div>
+                        </div>
+                    </a>
+                    <div class="product-info">
+                        <h3 class="product-name">LV X Timberland Boot</h3>
+                        <p class="product-price">140.00€</p>
+                    </div>
+                </article>
+
+                <!-- Sapato 106 -->
+                <article class="product-card reveal" data-product-id="106" data-price="130" data-size="38,39,40,41,42,43,44" data-color="brown">
+                    <a href="produto.html?id=106" class="product-image-link">
+                        <div class="product-image">
+                            <img src="shoes/nike_air_max_95_Corteiz_1.png" alt="Nike Air Max 95 BH Corteiz">
+                            <div class="product-overlay"><span>Ver Detalhes</span></div>
+                        </div>
+                    </a>
+                    <div class="product-info">
+                        <h3 class="product-name">Nike Air Max 95 BH Corteiz</h3>
+                        <p class="product-price">130.00€</p>
+                    </div>
+                </article>
+
+                <!-- Sapato 107 -->
+                <article class="product-card reveal" data-product-id="107" data-price="140" data-size="38,39,40,41,42,43,44" data-color="black">
+                    <a href="produto.html?id=107" class="product-image-link">
+                        <div class="product-image">
+                            <img src="shoes/nike_hot_step_2_1.png" alt="Nike Hot Step 2">
+                            <div class="product-overlay"><span>Ver Detalhes</span></div>
+                        </div>
+                    </a>
+                    <div class="product-info">
+                        <h3 class="product-name">Nike Hot Step 2</h3>
+                        <p class="product-price">140.00€</p>
+                    </div>
+                </article>
+
+                <!-- Sapato 108 -->
+                <article class="product-card reveal" data-product-id="108" data-price="120" data-size="38,39,40,41,42,43,44" data-color="brown">
+                    <a href="produto.html?id=108" class="product-image-link">
+                        <div class="product-image">
+                            <img src="shoes/yeezy_foamrunner_1.png" alt="Yeezy Foam Runner">
+                            <div class="product-overlay"><span>Ver Detalhes</span></div>
+                        </div>
+                    </a>
+                    <div class="product-info">
+                        <h3 class="product-name">Yeezy Foam Runner</h3>
+                        <p class="product-price">120.00€</p>
+                    </div>
+                </article>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-brand">
+                    <a href="index.html" class="footer-logo">NOIR</a>
+                    <p>Moda masculina de luxo para o homem contemporâneo.</p>
+                    <div class="social-links">
+                        <a href="#" aria-label="Instagram">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+                                <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+                                <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+                            </svg>
+                        </a>
+                    </div>
+                </div>
+                <div class="footer-links">
+                    <h4>Loja</h4>
+                    <ul>
+                        <li><a href="homem.html">Coleção</a></li>
+                        <li><a href="shoes.html">Calçado</a></li>
+                    </ul>
+                </div>
+                <div class="footer-links">
+                    <h4>Apoio</h4>
+                    <ul>
+                        <li><a href="medidas.html">Guia de Tamanhos</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 NOIR. Todos os direitos reservados.</p>
+                <div class="footer-legal">
+                    <a href="#">Privacidade</a>
+                    <a href="#">Termos</a>
+                    <a href="#">Cookies</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+    
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

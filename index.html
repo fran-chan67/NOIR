@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="pt">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NOIR | Street</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600&family=Montserrat:wght@300;400;500;600&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+    <!-- Custom Cursor -->
+    <div class="cursor"></div>
+    <div class="cursor-follower"></div>
+
+    <!-- Search Overlay -->
+    <div class="search-overlay" id="searchOverlay">
+        <div class="search-overlay-header">
+            <div class="search-input-wrap">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <path d="m21 21-4.35-4.35"></path>
+                </svg>
+                <input type="text" id="searchOverlayInput" placeholder="Pesquisar produtos..." autocomplete="off">
+            </div>
+            <button class="search-overlay-close" id="searchOverlayClose" aria-label="Fechar pesquisa">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
+        </div>
+        <div class="search-results-container" id="searchResultsContainer">
+            <p class="search-hint" id="searchHint">Escreva para pesquisar produtos...</p>
+            <div class="search-results-grid" id="searchResultsGrid"></div>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <header class="header" id="header">
+        <nav class="nav">
+            <a href="index.html" class="logo">NOIR</a>
+            <ul class="nav-links">
+                <li><a href="homem.html" class="nav-link">Coleção</a></li>
+                <li><a href="shoes.html" class="nav-link">Calçado</a></li>
+                <li><a href="#about" class="nav-link">Sobre</a></li>
+                <li><a href="#contact" class="nav-link">Contacto</a></li>
+            </ul>
+            <div class="nav-actions">
+                <button class="search-btn" aria-label="Pesquisar">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="1.5">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <path d="m21 21-4.35-4.35"></path>
+                    </svg>
+                </button>
+                <button class="cart-btn" id="cartBtn" aria-label="Carrinho">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="1.5">
+                        <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+                        <line x1="3" y1="6" x2="21" y2="6"></line>
+                        <path d="M16 10a4 4 0 0 1-8 0"></path>
+                    </svg>
+                    <span class="cart-count" id="cartCount">0</span>
+                </button>
+                <button class="menu-toggle" id="menuToggle" aria-label="Menu">
+                    <span></span>
+                    <span></span>
+                </button>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Mobile Menu -->
+    <div class="mobile-menu" id="mobileMenu">
+        <ul class="mobile-nav-links">
+            <li><a href="homem.html">Coleção</a></li>
+            <li><a href="shoes.html">Calçado</a></li>
+            <li><a href="#about">Sobre</a></li>
+            <li><a href="#contact">Contacto</a></li>
+        </ul>
+    </div>
+
+    <!-- Cart Sidebar -->
+    <div class="cart-overlay" id="cartOverlay"></div>
+    <aside class="cart-sidebar" id="cartSidebar">
+        <div class="cart-header">
+            <h2>Carrinho</h2>
+            <button class="cart-close" id="cartClose" aria-label="Fechar carrinho">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
+        </div>
+        <div class="cart-items" id="cartItems">
+            <!-- Cart items will be dynamically inserted here -->
+        </div>
+        <div class="cart-empty" id="cartEmpty">
+            <p>O seu carrinho está vazio</p>
+            <a href="homem.html" class="btn btn-primary">Explorar Coleção</a>
+        </div>
+        <div class="cart-footer" id="cartFooter">
+            <div class="cart-subtotal">
+                <span>Subtotal</span>
+                <span id="cartSubtotal">€0.00</span>
+            </div>
+            <p class="cart-shipping">Portes calculados no checkout</p>
+            <button class="btn btn-primary btn-full">Finalizar Compra</button>
+        </div>
+    </aside>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-bg">
+            <div class="hero-image"></div>
+        </div>
+        <div class="hero-content">
+            <span class="hero-subtitle reveal">UMA MARCA CONFIÁVEL</span>
+            <h1 class="hero-title reveal">
+                <span>A Essência</span>
+                <span>do StreetWear</span>
+                <span>Masculino</span>
+            </h1>
+            <p class="hero-description reveal">Uma loja com um catálogo revestido de peças atraentes e de alta
+                qualidade.</p>
+            <a href="homem.html" class="btn btn-primary reveal">Explorar Coleção</a>
+        </div>
+        <div class="hero-scroll">
+            <span>Scroll</span>
+            <div class="scroll-line"></div>
+        </div>
+    </section>
+
+    <!-- Featured Collections -->
+    <section class="featured-section" id="featured">
+        <div class="container">
+            <div class="section-header reveal">
+                <span class="section-subtitle">Coleções</span>
+                <h2 class="section-title">Em Destaque</h2>
+            </div>
+            <div class="featured-grid">
+                <a href="homem.html" class="featured-card featured-large reveal">
+                    <div class="featured-image">
+                        <img src="logos/logo_roupa.jpg" alt="Vestuário Masculino">
+                    </div>
+                    <div class="featured-content">
+                        <h3>Vestuário</h3>
+                        <span class="featured-link">Descobrir →</span>
+                    </div>
+                </a>
+                <a href="shoes.html" class="featured-card reveal">
+                    <div class="featured-image">
+                        <img src="logos/logo_shoes.jpg" alt="Calçado">
+                    </div>
+                    <div class="featured-content">
+                        <h3>Calçado</h3>
+                        <span class="featured-link">Descobrir →</span>
+                    </div>
+                </a>
+                <a class="featured-card reveal">
+                    <div class="featured-image">
+                        <img src="logos/pexels-imperioame-15835599.jpg" alt="Novidades">
+                    </div>
+                    <div class="featured-content">
+                        <h3>Novidades na coleção</h3>
+                        <span class="featured-link">mais a baixo!</span>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- New Arrivals -->
+    <section class="products-section">
+        <div class="container">
+            <div class="section-header reveal">
+                <span class="section-subtitle">Novidades</span>
+                <h2 class="section-title">Novas Chegadas</h2>
+            </div>
+            <div class="products-grid">
+                <article class="product-card reveal" data-product-id="1">
+                    <a href="produto.html?id=1" class="product-image-link">
+                        <div class="product-image">
+                            <img src="roupa/ami_paris_sweat_1.png" alt="Ami Paris Sweat">
+                            <div class="product-overlay">
+                                <span>Ver Detalhes</span>
+                            </div>
+                        </div>
+                    </a>
+                    <div class="product-info">
+                        <h3 class="product-name">Ami Paris Sweat</h3>
+                        <p class="product-price">79.99€</p>
+                    </div>
+                </article>
+                <article class="product-card reveal" data-product-id="2">
+                    <a href="produto.html?id=2" class="product-image-link">
+                        <div class="product-image">
+                            <img src="roupa/burberry_tshirt_1.png" alt="Burberry T-shirt">
+                            <div class="product-overlay">
+                                <span>Ver Detalhes</span>
+                            </div>
+                        </div>
+                    </a>
+                    <div class="product-info">
+                        <h3 class="product-name">Burberry T-shirt</h3>
+                        <p class="product-price">54.99€</p>
+                    </div>
+                </article>
+                <article class="product-card reveal" data-product-id="3">
+                    <a href="produto.html?id=3" class="product-image-link">
+                        <div class="product-image">
+                            <img src="roupa/chrome_hearts_sweat_1.png" alt="Chrome Hearts Sweat">
+                            <div class="product-overlay">
+                                <span>Ver Detalhes</span>
+                            </div>
+                        </div>
+                    </a>
+                    <div class="product-info">
+                        <h3 class="product-name">Chrome Hearts Sweat</h3>
+                        <p class="product-price">79.99€</p>
+                    </div>
+                </article>
+                <article class="product-card reveal" data-product-id="4">
+                    <a href="produto.html?id=4" class="product-image-link">
+                        <div class="product-image">
+                            <img src="roupa/denim_tears_hoodie_1.png" alt="Denim Tears Hoodie">
+                            <div class="product-overlay">
+                                <span>Ver Detalhes</span>
+                            </div>
+                        </div>
+                    </a>
+                    <div class="product-info">
+                        <h3 class="product-name">Denim Tears Hoodie</h3>
+                        <p class="product-price">99.99€</p>
+                    </div>
+                </article>
+            </div>
+            <div class="section-cta reveal">
+                <a href="homem.html" class="btn btn-secondary">Ver Toda a Coleção</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Brand Story -->
+    <section class="brand-section" id="about">
+        <div class="brand-content">
+            <div class="brand-text reveal">
+                <span class="section-subtitle">A Nossa História</span>
+                <h2 class="section-title">Como surgimos e mais?</h2>
+                <p>A NOIR surgiu na ideia de um projeto chamado de PAP (Projeto de Aptidão Profissional), algo que
+                    qualquer aluno do profissional tem de realizar para poder concluir e curso frequentado e o 12º ano.
+                    Embora que seja apenas um projeto em desenvolvimento se tudo correr bem pode tornar-se em algo muito
+                    maior quem sabe numa loja cada vez maior e até ganhar forma física..</p>
+                <p>É uma loja focado tanto em roupa como em calçado mais moderno, ou seja, streetwear. É uma moda
+                    amplamente usada pela comunidade mais joveme bem reconhecida e aqui tentaremos disponibilizar alguns
+                    produtos.</p>
+                <p>Agradecemos pelo sua confiança na nossa marca, obrigado!</p>
+            </div>
+            <div class="brand-image reveal">
+                <img src="logos/logo_pap.png" alt="Noir">
+            </div>
+        </div>
+    </section>
+
+    <!-- Newsletter -->
+    <section class="newsletter-section">
+        <div class="container">
+            <div class="newsletter-content reveal">
+                <h2>Junte-se ao Círculo NOIR</h2>
+                <p>Receba acesso exclusivo a novas coleções, eventos privados, ofertas especiais entre muitas outras
+                    coisas.</p>
+                <form class="newsletter-form">
+                    <input type="email" placeholder="O seu email" required>
+                    <button type="submit" class="btn btn-primary">Notifique-me!</button>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer" id="contact">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-brand">
+                    <a href="index.html" class="footer-logo">NOIR</a>
+                    <p>Moda masculina de luxo para o homem e tudo o que quiseres.</p>
+                    <p>Para obter mais informações pode contactear o seguinte número: 927 440 699. Ou Vá até à nossa
+                        página de instagram em baixo.</p>
+                    <div class="social-links">
+                        <a href="https://www.instagram.com/fran_dmr_?igsh=MXVzNW1vd2lwNjEy" aria-label="Instagram">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="1.5">
+                                <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+                                <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+                                <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+                            </svg>
+                        </a>
+                    </div>
+                </div>
+                <div class="footer-links">
+                    <h4>Loja</h4>
+                    <ul>
+                        <li><a href="homem.html">Coleção</a></li>
+                        <li><a href="shoes.html">Calçado</a></li>
+                    </ul>
+                </div>
+                <div class="footer-links">
+                    <h4>Apoio</h4>
+                    <ul>
+                        <li><a href="medidas.html">Guia de Tamanhos</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 NOIR. Todos os seus direitos reservados.</p>
+                <div class="footer-legal">
+                    <a>Privacidade</a>
+                    <a>Termos</a>
+                    <a>Cookies</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+    
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+    <script src="script.js"></script>
+</body>
+
+</html>
