@@ -853,6 +853,11 @@ var Filters = {
         var sortSelect = document.getElementById('sortSelect');
         if (sortSelect) {
             var grid = document.getElementById('productsGrid');
+
+            // Guardar ordem original ao carregar
+            var originalOrder = products.slice();
+            products.forEach(function(p, i) { p.dataset.originalIndex = i; });
+
             function applySort(val) {
                 if (!grid) return;
                 var sorted = products.slice().sort(function(a, b) {
@@ -860,6 +865,9 @@ var Filters = {
                     var pb = parseFloat(b.dataset.price) || 0;
                     if (val === 'price-asc')  return pa - pb;
                     if (val === 'price-desc') return pb - pa;
+                    if (val === 'featured' || val === 'newest') {
+                        return parseInt(a.dataset.originalIndex) - parseInt(b.dataset.originalIndex);
+                    }
                     return 0;
                 });
                 sorted.forEach(function(p) { grid.appendChild(p); });
