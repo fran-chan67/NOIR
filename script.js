@@ -13,7 +13,7 @@ var FIREBASE_CONFIG = {
 };
 
 // Google Sheets URL
-var SHEETS_URL = 'https://script.google.com/macros/s/AKfycbyOCU4ZZ14R2tmdbKCm5BKTwPAVWiNKe0R5FsLq9jDB4wLI-Pu3Z45BhXh2dackc8E5/exec';
+var SHEETS_URL = 'https://script.google.com/macros/s/AKfycbwrb6yJU0VzabyYRuFi4Ou1nLWo0ijswM_DeATTelkMSKBs4pRj8g9YwI7xPxu-VnUGgQ/exec';
 
 document.addEventListener('DOMContentLoaded', function() {
     CustomCursor.init();
@@ -28,6 +28,10 @@ document.addEventListener('DOMContentLoaded', function() {
     ProductData.init();
     Search.init();
     Auth.init();
+    Banner.init();
+    Wishlist.init();
+    Reviews.init();
+    Newsletter.init();
 });
 
 // ==========================================
@@ -132,6 +136,10 @@ var Auth = {
             this.firebaseAuth.onAuthStateChanged(function(user) {
                 self.currentUser = user;
                 self.updateIcon();
+                // Re-render reviews form agora que sabemos o estado do utilizador
+                if (typeof Reviews !== 'undefined' && Reviews.productId) {
+                    Reviews.renderForm();
+                }
             });
         } else {
             console.warn('Firebase SDK não carregado. Adiciona os scripts do Firebase antes do script.js.');
@@ -634,19 +642,24 @@ var Cart = {
             var btn = document.getElementById('_coSubmit');
             btn.textContent = 'A enviar...'; btn.style.opacity = '0.6'; btn.disabled = true;
 
+            // Gerar número de encomenda único
+            var orderNum = 'NOIR-' + Math.floor(1000 + Math.random() * 9000);
+
             var payload = {
+                type: 'checkout',
+                encomenda: orderNum,
                 nome: nome, email: email, telemovel: tel,
                 pais: pais, codigoPostal: cp, cidade: cidade,
                 morada: morada, itens: itensList, total: totalStr
             };
 
             fetch(SHEETS_URL, { method: 'POST', body: JSON.stringify(payload) })
-                .then(function()  { Cart._showConfirmation(nome, totalStr); })
-                .catch(function() { Cart._showConfirmation(nome, totalStr); });
+                .then(function()  { Cart._showConfirmation(nome, totalStr, orderNum); })
+                .catch(function() { Cart._showConfirmation(nome, totalStr, orderNum); });
         });
     },
 
-    _showConfirmation: function(nome, totalStr) {
+    _showConfirmation: function(nome, totalStr, orderNum) {
         var el = document.getElementById('_coOverlay');
         if (el) el.remove();
 
@@ -662,6 +675,8 @@ var Cart = {
             '<p style="font-size:.75rem;letter-spacing:.15em;text-transform:uppercase;color:#707070;margin:0 0 8px">Obrigado, ' + nome.split(' ')[0] + '!</p>' +
             '<p style="font-size:.85rem;color:#505050;line-height:1.8;margin:0 0 28px">O seu pedido foi recebido com sucesso.<br>Receberá em breve uma confirmação por email.</p>' +
             '<div style="border-top:1px solid #e8e8e8;border-bottom:1px solid #e8e8e8;padding:16px 0;margin-bottom:32px;width:100%">' +
+                '<p style="font-size:.7rem;letter-spacing:.2em;text-transform:uppercase;color:#a0a0a0;margin:0 0 6px">N.º Encomenda</p>' +
+                '<p style="font-size:1.1rem;font-family:\'Cormorant Garamond\',serif;font-weight:500;margin:0 0 12px;letter-spacing:.08em">' + (orderNum || '') + '</p>' +
                 '<p style="font-size:.7rem;letter-spacing:.2em;text-transform:uppercase;color:#a0a0a0;margin:0 0 6px">Total</p>' +
                 '<p style="font-size:1.6rem;font-family:\'Cormorant Garamond\',serif;font-weight:400;margin:0">' + totalStr + '</p>' +
             '</div>' +
@@ -1017,5 +1032,619 @@ var ProductData = {
             }).join('');
             related.querySelectorAll('.reveal').forEach(function(el) { setTimeout(function() { el.classList.add('visible'); }, 100); });
         }
+    }
+};
+
+// ==========================================
+// Banner promocional
+// ==========================================
+var Banner = {
+    init: function() {
+        if (document.getElementById('_promoBanner')) return;
+
+        var banner = document.createElement('div');
+        banner.id  = '_promoBanner';
+        banner.style.cssText = 'background:#000;color:#fff;text-align:center;padding:10px 48px;font-family:Montserrat,sans-serif;font-size:0.72rem;letter-spacing:0.2em;text-transform:uppercase;position:fixed;top:0;left:0;right:0;z-index:10000;width:100%;box-sizing:border-box;';
+        banner.innerHTML =
+            'Portes gr\u00e1tis em compras acima de \u20ac150 \u00a0|\u00a0 Devolu\u00e7\u00f5es gratuitas at\u00e9 30 dias' +
+            '<button id="_bannerClose" style="position:absolute;right:14px;top:50%;transform:translateY(-50%);background:none;border:none;color:#fff;cursor:pointer;font-size:1.1rem;line-height:1;padding:4px;" aria-label="Fechar">\u00d7</button>';
+
+        var body = document.body;
+        body.insertBefore(banner, body.firstChild);
+
+        // Esperar o banner renderizar para medir a altura
+        setTimeout(function() {
+            var h = banner.offsetHeight;
+            var header = document.getElementById('header');
+            if (header) {
+                header.style.top = h + 'px';
+                header.style.transition = 'top 0.3s ease';
+            }
+            body.style.paddingTop = h + 'px';
+        }, 10);
+
+        document.getElementById('_bannerClose').addEventListener('click', function() {
+            var header = document.getElementById('header');
+            banner.style.transition = 'opacity 0.3s ease';
+            banner.style.opacity = '0';
+            setTimeout(function() {
+                banner.remove();
+                if (header) { header.style.top = '0'; }
+                body.style.paddingTop = '0';
+            }, 300);
+        });
+    }
+};
+
+// ==========================================
+// Wishlist (Favoritos)
+// ==========================================
+var Wishlist = {
+    items: [],
+
+    init: function() {
+        this.items = JSON.parse(localStorage.getItem('noirWishlist') || '[]');
+
+        // Injectar estilos
+        if (!document.getElementById('_wishStyles')) {
+            var s = document.createElement('style');
+            s.id  = '_wishStyles';
+            s.textContent =
+                '@keyframes _wIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}' +
+                '@keyframes _wOut{from{opacity:1}to{opacity:0}}' +
+                '@keyframes _wSlide{from{transform:translateX(60px);opacity:0}to{transform:translateX(0);opacity:1}}' +
+                '._wishPanel{background:#fff;width:420px;max-width:95vw;height:100%;overflow-y:auto;padding:40px;animation:_wSlide 0.4s cubic-bezier(.16,1,.3,1);}' +
+                '._wishItem{display:flex;gap:16px;padding:16px 0;border-bottom:1px solid #e8e8e8;align-items:center;}' +
+                '._wishItem img{width:72px;height:72px;object-fit:contain;background:#f8f8f8;flex-shrink:0;}' +
+                '._wishItem-info{flex:1;}' +
+                '._wishItem-name{font-size:.85rem;font-family:"Cormorant Garamond",serif;margin:0 0 4px;}' +
+                '._wishItem-price{font-size:.75rem;color:#707070;margin:0;}' +
+                '._wishRemove{background:none;border:none;cursor:pointer;font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;color:#a0a0a0;padding:0;margin-top:6px;display:block;}' +
+                '._wishRemove:hover{color:#000;}';
+            document.head.appendChild(s);
+        }
+
+        // Injectar ícone de coração no header
+        Wishlist.injectHeaderIcon();
+
+        // Coraçõezinhos nos cards da grelha
+        document.querySelectorAll('.product-card').forEach(function(card) {
+            var pid = card.dataset.productId;
+            if (!pid) return;
+            var imgDiv = card.querySelector('.product-image');
+            if (!imgDiv) return;
+            imgDiv.style.position = 'relative';
+
+            var heart = document.createElement('button');
+            heart.className = 'btn-wishlist';
+            heart.setAttribute('aria-label', 'Favoritos');
+            heart.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>';
+            if (Wishlist.items.indexOf(pid) !== -1) heart.classList.add('active');
+            heart.addEventListener('click', function(e) {
+                e.preventDefault(); e.stopPropagation();
+                Wishlist.toggle(pid, heart);
+            });
+            imgDiv.appendChild(heart);
+        });
+
+        // Botão na página de produto
+        var btn = document.getElementById('wishlistBtn');
+        if (btn) {
+            var pid = new URLSearchParams(window.location.search).get('id');
+            if (pid && Wishlist.items.indexOf(pid) !== -1) btn.classList.add('active');
+            btn.addEventListener('click', function() { Wishlist.toggle(pid, btn); });
+        }
+    },
+
+    injectHeaderIcon: function() {
+        if (document.getElementById('wishlistHeaderBtn')) return;
+        var navActions = document.querySelector('.nav-actions');
+        if (!navActions) return;
+
+        var btn = document.createElement('button');
+        btn.id  = 'wishlistHeaderBtn';
+        btn.setAttribute('aria-label', 'Favoritos');
+        btn.style.cssText = 'background:none;border:none;cursor:pointer;padding:4px;display:inline-flex;align-items:center;justify-content:center;color:inherit;position:relative;';
+        btn.innerHTML =
+            '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>' +
+            '<span id="_wishCount" style="position:absolute;top:-4px;right:-4px;background:#000;color:#fff;border-radius:50%;width:16px;height:16px;font-size:9px;display:flex;align-items:center;justify-content:center;font-family:Montserrat,sans-serif;"></span>';
+
+        btn.addEventListener('click', function() { Wishlist.openPanel(); });
+
+        var cartBtn = document.getElementById('cartBtn');
+        if (cartBtn) navActions.insertBefore(btn, cartBtn);
+        else navActions.appendChild(btn);
+
+        Wishlist.updateCount();
+    },
+
+    updateCount: function() {
+        var el = document.getElementById('_wishCount');
+        if (!el) return;
+        el.textContent = Wishlist.items.length > 0 ? Wishlist.items.length : '';
+        el.style.display = Wishlist.items.length > 0 ? 'flex' : 'none';
+    },
+
+    openPanel: function() {
+        if (document.getElementById('_wishOverlay')) return;
+
+        var overlay = document.createElement('div');
+        overlay.id  = '_wishOverlay';
+        overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9998;display:flex;align-items:stretch;justify-content:flex-end;animation:_nFade 0.3s ease;';
+
+        var panel = document.createElement('div');
+        panel.className = '_wishPanel';
+
+        // Header
+        panel.innerHTML =
+            '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:32px;">' +
+                '<h2 style="font-family:\'Cormorant Garamond\',serif;font-size:1.7rem;font-weight:400;letter-spacing:.06em;margin:0;">Favoritos</h2>' +
+                '<button id="_wishClose" style="background:none;border:none;cursor:pointer;padding:4px;">' +
+                    '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="1.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>' +
+                '</button>' +
+            '</div>' +
+            '<div id="_wishList"></div>';
+
+        overlay.appendChild(panel);
+        document.body.appendChild(overlay);
+        document.body.style.overflow = 'hidden';
+
+        Wishlist.renderPanel();
+
+        document.getElementById('_wishClose').addEventListener('click', function() {
+            overlay.remove(); document.body.style.overflow = '';
+        });
+        overlay.addEventListener('click', function(e) {
+            if (e.target === overlay) { overlay.remove(); document.body.style.overflow = ''; }
+        });
+    },
+
+    renderPanel: function() {
+        var list = document.getElementById('_wishList');
+        if (!list) return;
+
+        if (Wishlist.items.length === 0) {
+            list.innerHTML = '<p style="font-size:.85rem;color:#a0a0a0;font-style:italic;">Ainda n\u00e3o tens favoritos guardados.</p>';
+            return;
+        }
+
+        var html = '';
+        Wishlist.items.forEach(function(pid) {
+            var p = ProductData.products[pid];
+            if (!p) return;
+            html += '<div class="_wishItem">' +
+                '<img src="' + p.images[0] + '" alt="' + p.name + '">' +
+                '<div class="_wishItem-info">' +
+                    '<p class="_wishItem-name">' + p.name + '</p>' +
+                    '<p class="_wishItem-price">' + p.price + '</p>' +
+                    '<a href="produto.html?id=' + pid + '" style="font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;color:#000;text-decoration:none;display:inline-block;margin-top:6px;border-bottom:1px solid #000;">Ver produto</a>' +
+                    '<button class="_wishRemove" onclick="Wishlist.removeFromPanel(\'' + pid + '\')">Remover</button>' +
+                '</div>' +
+            '</div>';
+        });
+        list.innerHTML = html;
+    },
+
+    removeFromPanel: function(pid) {
+        var idx = Wishlist.items.indexOf(pid);
+        if (idx !== -1) Wishlist.items.splice(idx, 1);
+        localStorage.setItem('noirWishlist', JSON.stringify(Wishlist.items));
+        Wishlist.updateCount();
+        Wishlist.renderPanel();
+        // Atualizar coraçõezinhos na grelha
+        document.querySelectorAll('.product-card[data-product-id="' + pid + '"] .btn-wishlist').forEach(function(b) { b.classList.remove('active'); });
+    },
+
+    toggle: function(pid, btn) {
+        if (!pid) return;
+        var idx = Wishlist.items.indexOf(pid);
+        if (idx === -1) {
+            Wishlist.items.push(pid);
+            if (btn) btn.classList.add('active');
+            Wishlist.showToast('Adicionado aos favoritos \u2665');
+        } else {
+            Wishlist.items.splice(idx, 1);
+            if (btn) btn.classList.remove('active');
+            Wishlist.showToast('Removido dos favoritos');
+        }
+        localStorage.setItem('noirWishlist', JSON.stringify(Wishlist.items));
+        Wishlist.updateCount();
+    },
+
+    showToast: function(msg) {
+        var existing = document.getElementById('_wishToast');
+        if (existing) existing.remove();
+        var toast = document.createElement('div');
+        toast.id   = '_wishToast';
+        toast.style.cssText = 'position:fixed;bottom:32px;left:50%;transform:translateX(-50%);background:#000;color:#fff;padding:12px 24px;font-family:Montserrat,sans-serif;font-size:0.78rem;letter-spacing:0.1em;z-index:9999;animation:_wIn 0.3s ease;white-space:nowrap;';
+        toast.textContent = msg;
+        document.body.appendChild(toast);
+        setTimeout(function() {
+            toast.style.animation = '_wOut 0.3s ease forwards';
+            setTimeout(function() { toast.remove(); }, 300);
+        }, 2200);
+    }
+};
+
+// ==========================================
+// Reviews (Avaliações) - Firebase Firestore
+// ==========================================
+var Reviews = {
+    db: null,
+    productId: null,
+    selectedStars: 0,
+
+    init: function() {
+        var grid      = document.getElementById('reviewsGrid');
+        var submitBtn = document.getElementById('submitReview');
+        if (!grid && !submitBtn) return;
+
+        Reviews.productId = new URLSearchParams(window.location.search).get('id');
+        if (!Reviews.productId) return;
+
+        // Não chamar renderForm aqui - o onAuthStateChanged trata disso
+        // depois de saber se o utilizador está logado ou não
+
+        // Injectar estilos das estrelas com meias estrelas
+        if (!document.getElementById('_revStyles')) {
+            var s = document.createElement('style');
+            s.id  = '_revStyles';
+            s.textContent =
+                '.star-wrap{display:inline-block;position:relative;font-size:1.6rem;cursor:pointer;color:#d0d0d0;margin-right:2px;}' +
+                '.star-wrap .star-full{position:absolute;left:0;top:0;width:100%;overflow:hidden;color:#000;white-space:nowrap;pointer-events:none;transition:width .1s;}' +
+                '.review-stars-disp{color:#000;font-size:1rem;letter-spacing:2px;}' +
+                '#starsInput{display:flex;margin-bottom:16px;gap:0;}' +
+                '._rev-login-hint{background:#f8f8f8;padding:14px 18px;font-size:.8rem;color:#505050;margin-bottom:20px;line-height:1.7;}' +
+                '._rev-login-hint a{color:#000;font-weight:600;}' +
+                '.review-card{background:#f8f8f8;padding:24px;position:relative;}' +
+                '._rev-del{position:absolute;top:12px;right:12px;background:none;border:none;cursor:pointer;font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:#a0a0a0;}' +
+                '._rev-del:hover{color:#c00;}';
+            document.head.appendChild(s);
+        }
+
+        // Inicializar Firestore
+        if (typeof firebase !== 'undefined' && firebase.apps.length) {
+            try {
+                Reviews.db = firebase.firestore();
+            } catch(e) { console.warn('Firestore não disponível:', e); }
+        }
+
+        // renderForm é chamado pelo onAuthStateChanged no Auth
+        // Se já houver estado (ex: página recarregada), chamar agora
+        if (typeof Auth !== 'undefined') {
+            Reviews.renderForm();
+        }
+        Reviews.loadReviews();
+    },
+
+    renderForm: function() {
+        var formArea = document.getElementById('reviewFormArea');
+        if (!formArea) return;
+
+        var user = Auth.currentUser;
+
+        if (!user) {
+            formArea.innerHTML =
+                '<div class="_rev-login-hint">' +
+                    '\u2139\ufe0f Para deixar uma avalia\u00e7\u00e3o tens de ter uma conta.<br>' +
+                    '<a href="#" id="_revLoginLink">Inicia sess\u00e3o</a> ou <a href="#" id="_revRegLink">cria uma conta</a> \u2014 \u00e9 gr\u00e1tis!' +
+                '</div>';
+            document.getElementById('_revLoginLink').addEventListener('click', function(e) {
+                e.preventDefault(); Auth.openPanel();
+            });
+            document.getElementById('_revRegLink').addEventListener('click', function(e) {
+                e.preventDefault(); Auth.openPanel();
+            });
+            return;
+        }
+
+        formArea.innerHTML =
+            '<div id="starsInput" style="margin-bottom:16px;"></div>' +
+            '<p id="_starHint" style="font-size:.72rem;color:#a0a0a0;margin:-8px 0 14px;letter-spacing:.05em;">Clica para selecionar a nota</p>' +
+            '<textarea id="reviewText" style="width:100%;padding:12px 14px;border:1px solid #d0d0d0;font-family:Montserrat,sans-serif;font-size:.82rem;box-sizing:border-box;outline:none;height:100px;resize:vertical;margin-bottom:12px;" placeholder="A sua opini\u00e3o sobre o produto..."></textarea>' +
+            '<button id="submitReview" style="background:#000;color:#fff;border:none;padding:14px 32px;font-size:.75rem;font-weight:500;letter-spacing:.15em;text-transform:uppercase;cursor:pointer;font-family:Montserrat,sans-serif;">Publicar Avalia\u00e7\u00e3o</button>' +
+            '<p id="reviewMsg" style="font-size:.78rem;color:#080;margin-top:10px;display:none;">Avalia\u00e7\u00e3o publicada! Obrigado.</p>';
+
+        Reviews.buildStarInput();
+
+        document.getElementById('submitReview').addEventListener('click', function() {
+            Reviews.submit();
+        });
+    },
+
+    buildStarInput: function() {
+        var container = document.getElementById('starsInput');
+        if (!container) return;
+        container.innerHTML = '';
+        Reviews.selectedStars = 0;
+
+        for (var i = 1; i <= 5; i++) {
+            // Cada estrela tem dois alvos clicáveis: metade esquerda (0.5) e direita (1.0)
+            var wrap = document.createElement('span');
+            wrap.className    = 'star-wrap';
+            wrap.dataset.star = i;
+            wrap.style.cssText = 'display:inline-block;position:relative;font-size:1.8rem;cursor:pointer;color:#d0d0d0;margin-right:1px;user-select:none;';
+            wrap.innerHTML =
+                // Fundo cinzento
+                '\u2605' +
+                // Metade esquerda (meia estrela)
+                '<span class="star-half-l" style="position:absolute;left:0;top:0;width:50%;height:100%;overflow:hidden;color:#000;pointer-events:none;">\u2605</span>' +
+                // Metade direita (estrela cheia)
+                '<span class="star-half-r" style="position:absolute;left:0;top:0;width:0%;height:100%;overflow:hidden;color:#000;pointer-events:none;">\u2605</span>';
+
+            (function(starNum, w) {
+                w.addEventListener('mousemove', function(e) {
+                    var rect = w.getBoundingClientRect();
+                    var half = (e.clientX - rect.left) < rect.width / 2;
+                    Reviews.highlightStars(half ? starNum - 0.5 : starNum);
+                });
+                w.addEventListener('mouseleave', function() {
+                    Reviews.highlightStars(Reviews.selectedStars);
+                });
+                w.addEventListener('click', function(e) {
+                    var rect = w.getBoundingClientRect();
+                    var half = (e.clientX - rect.left) < rect.width / 2;
+                    Reviews.selectedStars = half ? starNum - 0.5 : starNum;
+                    Reviews.highlightStars(Reviews.selectedStars);
+                    var hint = document.getElementById('_starHint');
+                    if (hint) {
+                        var s = Reviews.selectedStars;
+                        hint.textContent = s + ' estrela' + (s !== 1 ? 's' : '');
+                        hint.style.color = '#000';
+                    }
+                });
+            })(i, wrap);
+
+            container.appendChild(wrap);
+        }
+    },
+
+    highlightStars: function(value) {
+        var wraps = document.querySelectorAll('#starsInput .star-wrap');
+        wraps.forEach(function(w, i) {
+            var starNum = i + 1;
+            var halfL = w.querySelector('.star-half-l');
+            var halfR = w.querySelector('.star-half-r');
+            if (!halfL || !halfR) {
+                // fallback para estrutura antiga
+                var full = w.querySelector('.star-full');
+                if (full) {
+                    if (value >= starNum)            full.style.width = '100%';
+                    else if (value >= starNum - 0.5) full.style.width = '50%';
+                    else                             full.style.width = '0%';
+                }
+                return;
+            }
+            if (value >= starNum) {
+                halfL.style.width = '50%';
+                halfR.style.width = '100%';
+            } else if (value >= starNum - 0.5) {
+                halfL.style.width = '50%';
+                halfR.style.width = '0%';
+            } else {
+                halfL.style.width = '0%';
+                halfR.style.width = '0%';
+            }
+        });
+    },
+
+    starsHtml: function(value) {
+        var html = '';
+        for (var i = 1; i <= 5; i++) {
+            if (value >= i) {
+                html += '<span style="color:#000;font-size:1rem;">\u2605</span>';
+            } else if (value >= i - 0.5) {
+                html += '<span style="position:relative;display:inline-block;font-size:1rem;color:#d0d0d0;">\u2605<span style="position:absolute;left:0;top:0;overflow:hidden;width:50%;color:#000;">\u2605</span></span>';
+            } else {
+                html += '<span style="color:#d0d0d0;font-size:1rem;">\u2605</span>';
+            }
+        }
+        return html;
+    },
+
+    submit: function() {
+        var user  = Auth.currentUser;
+        var texto = document.getElementById('reviewText') ? document.getElementById('reviewText').value.trim() : '';
+
+        if (!user)  { alert('Tens de iniciar sess\u00e3o para publicar.'); return; }
+        if (!texto) { alert('Escreve a tua opini\u00e3o.'); return; }
+        if (Reviews.selectedStars === 0) { alert('Seleciona pelo menos meia estrela.'); return; }
+
+        var profile = Auth.getProfile();
+        var nome    = profile.nome || user.email.split('@')[0];
+
+        var review = {
+            productId: Reviews.productId,
+            uid:       user.uid,
+            nome:      nome,
+            email:     user.email,
+            texto:     texto,
+            stars:     Reviews.selectedStars,
+            data:      new Date().toLocaleDateString('pt-PT'),
+            timestamp: Date.now()
+        };
+
+        // Guardar no Firestore (permanente) ou localStorage (fallback)
+        if (Reviews.db) {
+            Reviews.db.collection('reviews').add(review)
+                .then(function() { Reviews.afterSubmit(); Reviews.loadReviews(); })
+                .catch(function(err) { console.error(err); Reviews.saveLocal(review); Reviews.afterSubmit(); });
+        } else {
+            Reviews.saveLocal(review);
+            Reviews.afterSubmit();
+        }
+    },
+
+    saveLocal: function(review) {
+        var key  = 'noirReviews_' + Reviews.productId;
+        var list = JSON.parse(localStorage.getItem(key) || '[]');
+        list.unshift(review);
+        localStorage.setItem(key, JSON.stringify(list));
+        Reviews.renderLocal(list);
+    },
+
+    afterSubmit: function() {
+        var msg = document.getElementById('reviewMsg');
+        if (document.getElementById('reviewText')) document.getElementById('reviewText').value = '';
+        Reviews.selectedStars = 0;
+        Reviews.highlightStars(0);
+        var hint = document.getElementById('_starHint');
+        if (hint) hint.textContent = 'Clica para selecionar a nota';
+        if (msg) { msg.style.display = 'block'; setTimeout(function() { msg.style.display = 'none'; }, 3000); }
+    },
+
+    loadReviews: function() {
+        var grid = document.getElementById('reviewsGrid');
+        if (!grid) return;
+
+        if (Reviews.db) {
+            Reviews.db.collection('reviews')
+                .where('productId', '==', Reviews.productId)
+                .get()
+                .then(function(snap) {
+                    var list = [];
+                    snap.forEach(function(doc) { list.push({ id: doc.id, data: doc.data() }); });
+                    // Ordenar por timestamp no cliente (sem precisar de índice composto)
+                    list.sort(function(a, b) { return (b.data.timestamp || 0) - (a.data.timestamp || 0); });
+                    Reviews.renderFirestore(list, grid);
+                })
+                .catch(function(err) {
+                    console.warn('Firestore read error:', err);
+                    var key  = 'noirReviews_' + Reviews.productId;
+                    Reviews.renderLocal(JSON.parse(localStorage.getItem(key) || '[]'));
+                });
+        } else {
+            var key  = 'noirReviews_' + Reviews.productId;
+            Reviews.renderLocal(JSON.parse(localStorage.getItem(key) || '[]'));
+        }
+    },
+
+    renderFirestore: function(list, grid) {
+        var noRev = document.getElementById('noReviews');
+        if (list.length === 0) {
+            if (noRev) noRev.style.display = 'block';
+            grid.innerHTML = '';
+            return;
+        }
+        if (noRev) noRev.style.display = 'none';
+
+        var user = Auth.currentUser;
+        var html = '';
+        list.forEach(function(item) {
+            var r   = item.data;
+            var id  = item.id;
+            var canDelete = user && (user.uid === r.uid);
+            html += '<div class="review-card">' +
+                (canDelete ? '<button class="_rev-del" onclick="Reviews.deleteReview(\'' + id + '\')">Eliminar</button>' : '') +
+                '<div class="review-stars">' + Reviews.starsHtml(r.stars) + '</div>' +
+                '<p class="review-text" style="font-size:.85rem;color:#505050;line-height:1.7;margin:8px 0 12px;">' + r.texto + '</p>' +
+                '<p class="review-author" style="font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:#a0a0a0;">' + r.nome + ' \u2014 ' + r.data + '</p>' +
+            '</div>';
+        });
+        grid.innerHTML = html;
+    },
+
+    renderLocal: function(list) {
+        var grid  = document.getElementById('reviewsGrid');
+        var noRev = document.getElementById('noReviews');
+        if (!grid) return;
+        if (list.length === 0) { if (noRev) noRev.style.display = 'block'; return; }
+        if (noRev) noRev.style.display = 'none';
+
+        var html = '';
+        list.forEach(function(r) {
+            html += '<div class="review-card">' +
+                '<div class="review-stars">' + Reviews.starsHtml(r.stars) + '</div>' +
+                '<p class="review-text" style="font-size:.85rem;color:#505050;line-height:1.7;margin:8px 0 12px;">' + r.texto + '</p>' +
+                '<p class="review-author" style="font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:#a0a0a0;">' + r.nome + ' \u2014 ' + r.data + '</p>' +
+            '</div>';
+        });
+        grid.innerHTML = html;
+    },
+
+    deleteReview: function(docId) {
+        if (!Reviews.db) return;
+        if (!confirm('Tens a certeza que queres eliminar esta avalia\u00e7\u00e3o?')) return;
+        Reviews.db.collection('reviews').doc(docId).delete()
+            .then(function() { Reviews.loadReviews(); });
+    }
+};
+
+// ==========================================
+// Newsletter
+// ==========================================
+var Newsletter = {
+    init: function() {
+        var form  = document.querySelector('.newsletter-form');
+        if (!form) return;
+
+        // Dar id aos elementos se não tiverem
+        var input = form.querySelector('input[type="email"]');
+        var btn   = form.querySelector('button');
+        if (input) input.id = '_nlEmail';
+        if (btn)   btn.id   = '_nlBtn';
+
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            Newsletter.subscribe();
+        });
+
+        if (btn) btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            Newsletter.subscribe();
+        });
+    },
+
+    subscribe: function() {
+        var input = document.getElementById('_nlEmail');
+        if (!input) return;
+
+        var email = input.value.trim();
+        if (!email || email.indexOf('@') === -1) {
+            Newsletter.showMsg('Por favor introduz um email válido.', false);
+            return;
+        }
+
+        var btn = document.getElementById('_nlBtn');
+        if (btn) { btn.textContent = 'A enviar...'; btn.disabled = true; }
+
+        fetch(SHEETS_URL, {
+            method: 'POST',
+            body: JSON.stringify({ type: 'newsletter', email: email })
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data.duplicate) {
+                Newsletter.showMsg('Este email já está subscrito! ✓', true);
+            } else {
+                Newsletter.showMsg('Subscrito com sucesso! Verifica o teu email. ✦', true);
+                input.value = '';
+            }
+            if (btn) { btn.textContent = 'Notifique-me!'; btn.disabled = false; }
+        })
+        .catch(function() {
+            Newsletter.showMsg('Subscrito! Obrigado. ✦', true);
+            input.value = '';
+            if (btn) { btn.textContent = 'Notifique-me!'; btn.disabled = false; }
+        });
+    },
+
+    showMsg: function(text, success) {
+        var existing = document.getElementById('_nlMsg');
+        if (existing) existing.remove();
+
+        var msg = document.createElement('p');
+        msg.id  = '_nlMsg';
+        msg.textContent = text;
+        msg.style.cssText = 'font-size:.78rem;letter-spacing:.08em;margin-top:14px;' +
+            (success ? 'color:#4caf50;' : 'color:#f44336;');
+
+        var form = document.querySelector('.newsletter-form');
+        if (form && form.parentNode) form.parentNode.insertBefore(msg, form.nextSibling);
+
+        setTimeout(function() {
+            var el = document.getElementById('_nlMsg');
+            if (el) el.remove();
+        }, 5000);
     }
 };
